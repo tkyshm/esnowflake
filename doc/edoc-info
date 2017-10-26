@@ -1,0 +1,4 @@
+%% encoding: UTF-8
+{application,esnowflake}.
+{modules,[esnowflake,esnowflake_app,esnowflake_stats,esnowflake_sup,
+          esnowflake_worker,esnowflake_worker_pool,esnowflake_worker_sup]}.
