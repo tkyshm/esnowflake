@@ -11,10 +11,10 @@ Usage
 =====
 
 ```erlang
-> Id = application:start(esnowflake).
+> application:start(esnowflake).
 ok
 
-> esnowflake:generate_id().
+> Id = esnowflake:generate_id().
 896221795344384
 
 > esnowflake:generate_ids(2).
