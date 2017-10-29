@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/tkyshm/esnowflake.svg?branch=master)](https://travis-ci.org/tkyshm/esnowflake)
+
 esnowflake
 =====
 
