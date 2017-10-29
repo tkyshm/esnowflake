@@ -8,6 +8,12 @@ cache:
   directories:
     - _build
 
-before_script: rebar3 compile
+before_script:
+  - git clone https://github.com/inaka/elvis
+  - cd elvis
+  - rebar3 escriptize
+  - cp _build/default/bin/elvis /usr/local/bin
+  - cd -
+  - rebar3 compile
 
 script: make test
