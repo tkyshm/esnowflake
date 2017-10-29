@@ -8,6 +8,6 @@ cache:
   directories:
     - _build
 
-before_script: ./rebar3 compile
+before_script: rebar3 compile
 
 script: make test
