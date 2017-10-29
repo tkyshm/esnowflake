@@ -4,7 +4,8 @@ esnowflake
 =====
 
 esnowflake is Erlang/OTP application to generate uniq ID.  
-Original design: [Twitter IDs (snowflake)](https://github.com/twitter/snowflake).
+Original design: [Twitter IDs (snowflake)](https://github.com/twitter/snowflake).  
+[Documentation](https://hexdocs.pm/esnowflake/0.1.0/)
 
 Usage
 =====
