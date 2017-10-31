@@ -12,9 +12,6 @@
          decode_id/1,
          stats/0]).
 
--define(RECEIVE_TRIES, 3).
--define(RECEIVE_TIMEOUT, 3000).
-
 -type snowflake_id() :: integer().
 -type time_unit() :: seconds | milli_seconds.
 
