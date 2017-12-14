@@ -24,11 +24,15 @@
          t_generate_id/1,
          t_too_many_generate_same_time/1,
          t_generate_ids/1,
+         t_to_unixtime/1,
+         t_unixtime_to_id/1,
+         t_decode_id/1,
          t_clock_backward/1,
          b_generate_id/1,
          b_generate_ids/1
         ]).
 
+-include("esnowflake.hrl").
 -include_lib("common_test/include/ct.hrl").
 
 all() ->
@@ -41,7 +45,10 @@ groups() ->
     [
      {test, [], [
         t_generate_id,
-        t_generate_ids]},
+        t_generate_ids,
+        t_to_unixtime,
+        t_unixtime_to_id,
+        t_decode_id]},
      {bench, [], [
         b_generate_id,
         b_generate_ids]}
@@ -100,6 +107,31 @@ t_generate_ids(Config) ->
     Ids = esnowflake:generate_ids(Num),
     Num = length(Ids),
     Num = length(lists:usort(Ids)),
+    Config.
+
+t_to_unixtime(Config) ->
+    % Thu Dec 14 22:27:08 JST 2017
+    Id = 17942010698698752,
+    1513258028697 = esnowflake:to_unixtime(Id),
+    1513258028 = esnowflake:to_unixtime(Id, seconds),
+    Config.
+
+t_unixtime_to_id(Config) ->
+    % Thu Dec 14 22:27:08 JST 2017
+    UnixTime = 1513258028697,
+    UnixTimeSec = 1513258028,
+    17942010698661888 = esnowflake:unixtime_to_id(UnixTime),
+    17942007775232000 = esnowflake:unixtime_to_id(UnixTimeSec, seconds),
+    Config.
+
+t_decode_id(Config) ->
+    % timestamp: Thu Dec 14 22:27:08 JST 2017
+    % machine_id:9
+    % worker_id:0
+    Id = 17942010698698752,
+    {Timestamp, 9, 0} = esnowflake:decode_id(Id),
+    1513258028697 = Timestamp + ?TWEPOCH,
+
     Config.
 
 %% TODO: clock backward test
