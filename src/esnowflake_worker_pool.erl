@@ -13,6 +13,7 @@
 %% API
 -export([start_link/0,
          spawn_worker/1,
+         spawn_worker_with_redis/0,
          fetch/0]).
 
 %% gen_server callbacks
@@ -23,7 +24,10 @@
          terminate/2,
          code_change/3]).
 
+-include("esnowflake.hrl").
+
 -define(SERVER, ?MODULE).
+-define(TRY_COUNT, 3).
 
 -record(state, {
     workers = maps:new() :: map(),
@@ -45,6 +49,19 @@ start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 spawn_worker(Wid) ->
+    gen_server:call(?SERVER, {spawn_worker, Wid}).
+
+spawn_worker_with_redis() ->
+    [{client, C}] = ets:lookup(eredis, client),
+
+    Wid =
+    case set_worker_id(C, ?TRY_COUNT) of
+        {error, Reason} ->
+            exit(Reason);
+        Id ->
+            Id
+    end,
+
     gen_server:call(?SERVER, {spawn_worker, Wid}).
 
 fetch() ->
@@ -142,3 +159,16 @@ terminate(_Reason, _State) ->
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+%%% private functions
+set_worker_id(_, 0) ->
+    {error, over_retry_count_set_worker_id};
+set_worker_id(C, Try) ->
+    Key = rand:uniform(?WORKER_ID_RANGE),
+    case eredis:q(C, ["SET", Key, 1, "NX"]) of
+        {ok, <<"OK">>} ->
+            Key;
+        Any ->
+            error_logger:error_msg("set worker id failed: ~p", [Any]),
+            set_worker_id(C, Try-1)
+    end.
