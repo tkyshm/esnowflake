@@ -25,10 +25,11 @@
 
 -define(SERVER, ?MODULE).
 
+-include("esnowflake.hrl").
+
 -record(state, {
     version = undefined :: list() | undefined,
-    worker_num = 0 :: integer(),
-    pre_wall_time = lists:sort(erlang:statistics(scheduler_wall_time))
+    worker_num = 0 :: integer()
 }).
 
 %%%===================================================================
@@ -64,7 +65,6 @@ stats() ->
 %% @end
 %%--------------------------------------------------------------------
 init([Version, WorkerNum]) ->
-    erlang:system_flag(scheduler_wall_time, true),
     {ok, #state{version = Version, worker_num = WorkerNum}}.
 
 %%--------------------------------------------------------------------
@@ -81,23 +81,14 @@ init([Version, WorkerNum]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(stats, _From, State = #state{pre_wall_time = Ts0}) ->
-    Ts1 = lists:sort(erlang:statistics(scheduler_wall_time)),
-    DiffWallTime = lists:zip(Ts0, Ts1),
+handle_call(stats, _From, State = #state{version = Vsn, worker_num = Wnum}) ->
+    [MinId, MaxId] = application:get_env(esnowflake, worker_min_max_id, ?DEFAULT_WORKER_MIN_MAX),
 
-    Cpus = [{I, (A1 - A0)/(T1 - T0)} || {{I, A0, T0}, {I, A1, T1}} <- DiffWallTime],
+    Stats = [{version, Vsn},
+             {worker_num, Wnum},
+             {worker_ids, lists:seq(MinId, MaxId)}],
 
-    {A, T} =
-    lists:foldl(fun({{_, A0, T0}, {_, A1, T1}}, {Ai,Ti}) ->
-                        {Ai + (A1 - A0), Ti + (T1 - T0)}
-                end, {0, 0}, DiffWallTime),
-    TotalCpuUsage = A / T,
-
-    Stats = [{cpu_usage, Cpus},
-             {total_cpu_usage, TotalCpuUsage},
-             {memory, erlang:memory()}],
-
-    {reply, Stats, State#state{pre_wall_time = Ts1}}.
+    {reply, Stats, State}.
 
 %%--------------------------------------------------------------------
 %% @private
