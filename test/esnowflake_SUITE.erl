@@ -28,6 +28,7 @@
          t_unixtime_to_id/1,
          t_decode_id/1,
          t_clock_backward/1,
+         t_stats/1,
          b_generate_id/1,
          b_generate_ids/1
         ]).
@@ -46,9 +47,11 @@ groups() ->
      {test, [], [
         t_generate_id,
         t_generate_ids,
+        t_stats,
         t_to_unixtime,
         t_unixtime_to_id,
         t_decode_id]},
+
      {bench, [], [
         b_generate_id,
         b_generate_ids]}
@@ -107,6 +110,13 @@ t_generate_ids(Config) ->
     Ids = esnowflake:generate_ids(Num),
     Num = length(Ids),
     Num = length(lists:usort(Ids)),
+    Config.
+
+t_stats(Config) ->
+    [{version, _},
+     {worker_num, 10},
+     {worker_ids, [0,1,2,3,4,5,6,7,8,9]}] = esnowflake:stats(),
+
     Config.
 
 t_to_unixtime(Config) ->
