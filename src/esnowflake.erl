@@ -9,6 +9,8 @@
          generate_ids/1,
          to_unixtime/1,
          to_unixtime/2,
+         unixtime_to_id/1,
+         unixtime_to_id/2,
          decode_id/1,
          stats/0]).
 
@@ -51,6 +53,24 @@ to_unixtime(Id, Unit) ->
         milli_seconds ->
             TS + ?TWEPOCH
     end.
+
+%% @doc
+%% Returns snowflake uniq id from unix timestamp.
+%% @end
+-spec unixtime_to_id(TS :: integer()) -> integer().
+unixtime_to_id(UnixTime) ->
+    unixtime_to_id(UnixTime, milli_seconds).
+
+%% @doc
+%% Returns snowflake uniq id from unix timestamp.
+%% @end
+-spec unixtime_to_id(TS :: integer(), time_unit()) -> snowflake_id().
+unixtime_to_id(UnixTime, seconds) ->
+    unixtime_to_id(UnixTime*1000, milli_seconds);
+unixtime_to_id(UnixTime, milli_seconds) ->
+    TS = UnixTime - ?TWEPOCH,
+    <<Id:64>> = <<0:1, TS:41, 0:22>>,
+    Id.
 
 %% @doc
 %% Decode generated id to unix time, machine id and sequential number.
