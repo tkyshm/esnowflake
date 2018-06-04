@@ -59,7 +59,7 @@ init([]) ->
     WorkerSpec = #{
       id       => 'esnowflake_worker',
       start    => {'esnowflake_worker', start_link, []},
-      restart  => permanent,
+      restart  => transient,
       shutdown => 2000,
       type     => worker,
       modules  => ['esnowflake_worker']

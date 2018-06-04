@@ -15,26 +15,24 @@ start(_StartType, StartArgs) ->
 
     Version = proplists:get_value(vsn, StartArgs),
 
-    {IsRedis, WorkerNum} =
+    {Redis, WorkerNum} =
     case application:get_env(esnowflake, redis, undefined) of
         undefined ->
             % do nothing
-            {false, MaxId-MinId+1};
+            {undefined, MaxId-MinId+1};
         Args ->
-            ets:new(eredis, [named_table, public]),
             {ok, C} = eredis:start_link(Args),
-            Result = ets:insert(eredis, {client, C}),
             Wnum = application:get_env(esnowflake, worker_num, ?DEFAULT_WORKER_NUM),
-            {Result, Wnum}
+            {C, Wnum}
     end,
 
-    {ok, Pid} = esnowflake_sup:start_link(Version, WorkerNum),
+    {ok, Pid} = esnowflake_sup:start_link(Version, WorkerNum, Redis),
 
-    case IsRedis of
-       true ->
-           start_workers(WorkerNum);
-       false ->
-           start_workers(MinId, MaxId)
+    case Redis of
+       undefined ->
+           start_workers(MinId, MaxId);
+       _ ->
+           start_workers(WorkerNum)
     end,
 
     {ok, Pid}.
