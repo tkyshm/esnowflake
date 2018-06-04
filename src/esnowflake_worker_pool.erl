@@ -110,7 +110,7 @@ handle_call({spawn_worker, Wid}, _From, State = #state{workers = Wrks,
     NewWrks = maps:put(Wid, Wrk, Wrks),
     {reply, Wrk, State#state{workers = NewWrks, worker_num = Num+1}};
 handle_call(fetch, _From, State = #state{worker_num = Num, workers = Wrks}) ->
-    N = erlang:system_time(nano_seconds) rem Num,
+    N = (erlang:system_time(nano_seconds) rem Num) + 1,
     Wid = lists:nth(N, maps:keys(Wrks)),
     {ok, Wrk} = maps:find(Wid, Wrks),
     {reply, Wrk, State};
