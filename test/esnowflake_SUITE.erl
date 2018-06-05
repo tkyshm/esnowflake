@@ -29,6 +29,8 @@
          t_decode_id/1,
          t_clock_backward/1,
          t_stats/1,
+         t_not_use_redis/1,
+         t_over_worker_ids_limit/1,
          b_generate_id/1,
          b_generate_ids/1
         ]).
@@ -50,7 +52,9 @@ groups() ->
         t_stats,
         t_to_unixtime,
         t_unixtime_to_id,
-        t_decode_id]},
+        t_decode_id,
+        t_not_use_redis,
+        t_over_worker_ids_limit]},
 
      {bench, [], [
         b_generate_id,
@@ -67,21 +71,38 @@ group(_Groupname) ->
 %%% Overall setup/teardown
 %%%===================================================================
 init_per_suite(Config) ->
-    {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
     Config.
 
 end_per_suite(_Config) ->
-    ok = application:stop(esnowflake),
     ok.
 
 %%%===================================================================
 %%% Testcase specific setup/teardown
 %%%===================================================================
+init_per_testcase(t_not_use_redis, Config) ->
+    {ok, OldRedisConf} = application:get_env(esnowflake, redis),
+    application:unset_env(esnowflake, redis),
+    application:set_env(esnowflake, worker_min_max_id, [20, 24]),
+    {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
+    [{esnowflake_redis, OldRedisConf}|Config];
+init_per_testcase(t_over_worker_ids_limit, Config) ->
+    application:set_env(esnowflake, worker_num, 1025),
+    {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
+    Config;
 init_per_testcase(_TestCase, Config) ->
+    {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
     Config.
 
+end_per_testcase(t_not_use_redis, Config) ->
+    OldRedisConf = proplists:get_value(esnowflake_redis, Config),
+    application:unset_env(esnowflake, worker_min_max_id),
+    application:set_env(esnowflake, redis, OldRedisConf),
+    application:stop(esnowflake);
+end_per_testcase(t_over_worker_ids_limit, _Config) ->
+    application:set_env(esnowflake, worker_num, 5),
+    application:stop(esnowflake);
 end_per_testcase(_TestCase, _Config) ->
-    ok.
+    application:stop(esnowflake).
 
 %%%===================================================================
 %%% Individual Test Cases (from groups() definition)
@@ -141,6 +162,25 @@ t_decode_id(Config) ->
     Id = 17942010698698752,
     {Timestamp, 9, 0} = esnowflake:decode_id(Id),
     1513258028697 = Timestamp + ?TWEPOCH,
+
+    Config.
+
+t_not_use_redis(Config) ->
+    Id = esnowflake:generate_id(),
+    true = is_integer(Id),
+
+    [{version, _},
+     {worker_num, 5},
+     {worker_ids, [20, 21, 22, 23, 24]}] = esnowflake:stats(),
+
+    Config.
+
+t_over_worker_ids_limit(Config) ->
+    IDs = lists:seq(0,1023),
+
+    [{version, _},
+     {worker_num, 1024},
+     {worker_ids, IDs}] = esnowflake:stats(),
 
     Config.
 
