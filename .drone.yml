@@ -1,0 +1,11 @@
+pipeline:
+  build:
+    image: erlang:20
+    commands:
+      - git clone https://github.com/inaka/elvis
+      - cd elvis
+      - rebar3 escriptize
+      - sudo cp -r _build/default/bin/elvis /usr/local/bin
+      - cd -
+      - rebar3 compile
+      - make test
