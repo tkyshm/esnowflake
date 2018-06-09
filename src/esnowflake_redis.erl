@@ -57,8 +57,21 @@ handle_cast(_Info, State) ->
 
 handle_call(get_wid, _From, State = #state{redis = C, range_ids = RIds}) ->
     Pattern = lists:flatten(io_lib:format("~p:*", [?KEY_PREFIX])),
-    {ok, Keys} = eredis:q(C, ["KEYS", Pattern]),
-    {ok, UsedWids} = eredis:q(C, ["MGET", Keys]),
+    UsedWids =
+    case eredis:q(C, ["KEYS", Pattern]) of
+        {ok, []} ->
+            [];
+        {ok, Keys} ->
+            case eredis:q(C, ["MGET" | Keys]) of
+                {ok, Wids} ->
+                    [binary_to_integer(Wid)||Wid<-Wids];
+                {error, Reason} ->
+                    %% TODO:
+                    error_logger:error_msg("error: reason ~p, keys ids: ~p", [Reason, Keys]),
+                    []
+            end
+    end,
+
     case lists:subtract(RIds, UsedWids) of
         [] ->
             {reply, all_worker_ids_assigned, State};
