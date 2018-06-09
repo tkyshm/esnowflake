@@ -27,7 +27,6 @@
          t_to_unixtime/1,
          t_unixtime_to_id/1,
          t_decode_id/1,
-         t_clock_backward/1,
          t_stats/1,
          t_not_use_redis/1,
          t_over_worker_ids_limit/1,
@@ -37,6 +36,7 @@
 
 -include("esnowflake.hrl").
 -include_lib("common_test/include/ct.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 all() ->
     [
@@ -94,14 +94,17 @@ init_per_testcase(_TestCase, Config) ->
     Config.
 
 end_per_testcase(t_not_use_redis, Config) ->
+    flushdb(),
     OldRedisConf = proplists:get_value(esnowflake_redis, Config),
     application:unset_env(esnowflake, worker_min_max_id),
     application:set_env(esnowflake, redis, OldRedisConf),
     application:stop(esnowflake);
 end_per_testcase(t_over_worker_ids_limit, _Config) ->
+    flushdb(),
     application:set_env(esnowflake, worker_num, 5),
     application:stop(esnowflake);
 end_per_testcase(_TestCase, _Config) ->
+    flushdb(),
     application:stop(esnowflake).
 
 %%%===================================================================
@@ -176,16 +179,13 @@ t_not_use_redis(Config) ->
     Config.
 
 t_over_worker_ids_limit(Config) ->
-    IDs = lists:seq(0,1023),
 
     [{version, _},
      {worker_num, 1024},
      {worker_ids, IDs}] = esnowflake:stats(),
 
-    Config.
+    ?assert(length(IDs) =:= 1024),
 
-%% TODO: clock backward test
-t_clock_backward(Config) ->
     Config.
 
 %% benchmark
@@ -245,3 +245,9 @@ bench_generate_ids_op_per_sec(Diff, Cnt) ->
     esnowflake:generate_ids(1000),
     E = erlang:system_time(nano_seconds),
     bench_generate_ids_op_per_sec(Diff+(E-S), Cnt+1).
+
+
+% private
+flushdb() ->
+    {ok, C} = eredis:start_link([{port, 26379}]),
+    eredis:q(C, ["FLUSHDB"]).
