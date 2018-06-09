@@ -2,3 +2,4 @@
 -define(DEFAULT_WORKER_MIN_MAX, [0, 9]).
 -define(DEFAULT_WORKER_NUM, 10).
 -define(WORKER_ID_RANGE, 1024).
+-define(ETS_WORKER, esnowflake_workers).
