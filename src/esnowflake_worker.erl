@@ -142,11 +142,10 @@ handle_info(refetch_worker_id, State = #state{worker_id = Wid, refetch_period = 
             erlang:send_after(?REFETCH_PERIOD(RP), self(), refetch_worker_id),
             {noreply, State};
         {ok, undefined} ->
-            esnowflake_worker_pool:remove_worker(Wid),
             esnowflake_worker_pool:spawn_worker_with_redis(),
             {stop, {shutdown, already_assigned_worker_id}, State};
         {error, Reason} ->
-            error_logger:error_msg("reason: ~p~n", [Reason]),
+            error_logger:error_msg("refetch_worker_id failed: id=~p reason=~p~n", [Wid, Reason]),
             erlang:send_after(?REFETCH_PERIOD(RP), self(), refetch_worker_id),
             {noreply, State}
     end;
@@ -164,7 +163,11 @@ handle_info(_Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
+terminate({shutdown, _Reason}, #state{worker_id = Wid}) ->
+    esnowflake_worker_pool:remove_worker(Wid),
+    ok;
+terminate(_Reason, #state{worker_id = Wid}) ->
+    esnowflake_worker_pool:remove_worker(Wid),
     ok.
 
 %%--------------------------------------------------------------------
