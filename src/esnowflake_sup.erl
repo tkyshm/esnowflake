@@ -8,7 +8,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/3]).
+-export([start_link/2]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -19,15 +19,15 @@
 %% API functions
 %%====================================================================
 
-start_link(Version, Wnum, Redis) ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, [Version, Wnum, Redis]).
+start_link(Version, Redis) ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, [Version, Redis]).
 
 %%====================================================================
 %% Supervisor callbacks
 %%====================================================================
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
-init([Version, Wnum, Redis]) ->
+init([Version, Redis]) ->
     SupFlags = #{
       strategy  => rest_for_one,
       intensity => 1000,
@@ -71,7 +71,7 @@ init([Version, Wnum, Redis]) ->
 
     StatsSpec = #{
       id       => 'esnowflake_stats',
-      start    => {'esnowflake_stats', start_link, [Version, Wnum]},
+      start    => {'esnowflake_stats', start_link, [Version]},
       restart  => permanent,
       shutdown => 2000,
       type     => worker,

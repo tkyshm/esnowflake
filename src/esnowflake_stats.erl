@@ -11,9 +11,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/2,
-         stats/0
-        ]).
+-export([start_link/1,
+         stats/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -28,8 +27,7 @@
 -include("esnowflake.hrl").
 
 -record(state, {
-    version = undefined :: list() | undefined,
-    worker_num = 0 :: integer()
+    version = undefined :: list() | undefined
 }).
 
 %%%===================================================================
@@ -43,8 +41,8 @@
 %% @spec start_link(Version, WorkerNum) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link(Version, WorkerNum) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Version, WorkerNum], []).
+start_link(Version) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Version], []).
 
 stats() ->
     gen_server:call(?SERVER, stats).
@@ -64,8 +62,8 @@ stats() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Version, WorkerNum]) ->
-    {ok, #state{version = Version, worker_num = WorkerNum}}.
+init([Version]) ->
+    {ok, #state{version = Version}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -81,12 +79,12 @@ init([Version, WorkerNum]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(stats, _From, State = #state{version = Vsn, worker_num = Wnum}) ->
-    [MinId, MaxId] = application:get_env(esnowflake, worker_min_max_id, ?DEFAULT_WORKER_MIN_MAX),
+handle_call(stats, _From, State = #state{version = Vsn}) ->
+    Wids = esnowflake_worker_pool:worker_ids(),
 
     Stats = [{version, Vsn},
-             {worker_num, Wnum},
-             {worker_ids, lists:seq(MinId, MaxId)}],
+             {worker_num, length(Wids)},
+             {worker_ids, Wids}],
 
     {reply, Stats, State}.
 
