@@ -26,7 +26,7 @@ start(_StartType, StartArgs) ->
             {C, Wnum}
     end,
 
-    {ok, Pid} = esnowflake_sup:start_link(Version, WorkerNum, Redis),
+    {ok, Pid} = esnowflake_sup:start_link(Version, Redis),
 
     case Redis of
        undefined ->
