@@ -13,7 +13,7 @@
 -include("esnowflake.hrl").
 
 %% API
--export([start_link/1,
+-export([start_link/2,
         generate_id/1,
         generate_ids/2
         ]).
@@ -27,11 +27,13 @@
          code_change/3]).
 
 -define(SERVER, ?MODULE).
+-define(REFETCH_PERIOD(N), N*1000).
 
 -record(state, {
-    worker_id     = 0 :: integer(), % 0-1023
-    sequence      = 0 :: integer(), % 0-4095
-    pre_timestamp = erlang:system_time(milli_seconds) :: non_neg_integer()
+    worker_id      = 0 :: integer(), % 0-1023
+    sequence       = 0 :: integer(), % 0-4095
+    pre_timestamp  = erlang:system_time(milli_seconds) :: non_neg_integer(),
+    refetch_period = 1 :: non_neg_integer() % refetch worker id period (seconds)
 }).
 
 -type worker_state() :: #state{}.
@@ -47,8 +49,8 @@
 %% @spec start_link(Id) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link(Id) ->
-    gen_server:start_link(?MODULE, [Id], []).
+start_link(Id, IsRedis) ->
+    gen_server:start_link(?MODULE, [Id, IsRedis], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -65,7 +67,11 @@ start_link(Id) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Id]) ->
+init([Id, true]) ->
+    RP = application:get_env(esnowflake, refetch_period, 1),
+    erlang:send_after(?REFETCH_PERIOD(RP), self(), refetch_worker_id),
+    {ok, #state{worker_id = Id, refetch_period = RP}};
+init([Id, false]) ->
     {ok, #state{worker_id = Id}}.
 
 -spec generate_id(pid()) -> integer() |
@@ -130,6 +136,19 @@ handle_cast(_Req, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_info(refetch_worker_id, State = #state{worker_id = Wid, refetch_period = RP}) ->
+    case esnowflake_redis:setxx_wid(Wid) of
+        {ok, <<"OK">>} ->
+            erlang:send_after(?REFETCH_PERIOD(RP), self(), refetch_worker_id),
+            {noreply, State};
+        {ok, undefined} ->
+            esnowflake_worker_pool:spawn_worker_with_redis(),
+            {stop, {shutdown, already_assigned_worker_id}, State};
+        {error, Reason} ->
+            error_logger:error_msg("refetch_worker_id failed: id=~p reason=~p~n", [Wid, Reason]),
+            erlang:send_after(?REFETCH_PERIOD(RP), self(), refetch_worker_id),
+            {noreply, State}
+    end;
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -144,7 +163,11 @@ handle_info(_Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
+terminate({shutdown, _Reason}, #state{worker_id = Wid}) ->
+    esnowflake_worker_pool:remove_worker(Wid),
+    ok;
+terminate(_Reason, #state{worker_id = Wid}) ->
+    esnowflake_worker_pool:remove_worker(Wid),
     ok.
 
 %%--------------------------------------------------------------------

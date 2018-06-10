@@ -27,14 +27,16 @@
          t_to_unixtime/1,
          t_unixtime_to_id/1,
          t_decode_id/1,
-         t_clock_backward/1,
          t_stats/1,
+         t_not_use_redis/1,
+         t_over_worker_ids_limit/1,
          b_generate_id/1,
          b_generate_ids/1
         ]).
 
 -include("esnowflake.hrl").
 -include_lib("common_test/include/ct.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 all() ->
     [
@@ -50,7 +52,9 @@ groups() ->
         t_stats,
         t_to_unixtime,
         t_unixtime_to_id,
-        t_decode_id]},
+        t_decode_id,
+        t_not_use_redis,
+        t_over_worker_ids_limit]},
 
      {bench, [], [
         b_generate_id,
@@ -67,21 +71,41 @@ group(_Groupname) ->
 %%% Overall setup/teardown
 %%%===================================================================
 init_per_suite(Config) ->
-    {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
     Config.
 
 end_per_suite(_Config) ->
-    ok = application:stop(esnowflake),
     ok.
 
 %%%===================================================================
 %%% Testcase specific setup/teardown
 %%%===================================================================
+init_per_testcase(t_not_use_redis, Config) ->
+    {ok, OldRedisConf} = application:get_env(esnowflake, redis),
+    application:unset_env(esnowflake, redis),
+    application:set_env(esnowflake, worker_min_max_id, [20, 24]),
+    {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
+    [{esnowflake_redis, OldRedisConf}|Config];
+init_per_testcase(t_over_worker_ids_limit, Config) ->
+    application:set_env(esnowflake, worker_num, 1025),
+    {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
+    Config;
 init_per_testcase(_TestCase, Config) ->
+    {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
     Config.
 
+end_per_testcase(t_not_use_redis, Config) ->
+    flushdb(),
+    OldRedisConf = proplists:get_value(esnowflake_redis, Config),
+    application:unset_env(esnowflake, worker_min_max_id),
+    application:set_env(esnowflake, redis, OldRedisConf),
+    application:stop(esnowflake);
+end_per_testcase(t_over_worker_ids_limit, _Config) ->
+    flushdb(),
+    application:set_env(esnowflake, worker_num, 5),
+    application:stop(esnowflake);
 end_per_testcase(_TestCase, _Config) ->
-    ok.
+    flushdb(),
+    application:stop(esnowflake).
 
 %%%===================================================================
 %%% Individual Test Cases (from groups() definition)
@@ -114,8 +138,8 @@ t_generate_ids(Config) ->
 
 t_stats(Config) ->
     [{version, _},
-     {worker_num, 10},
-     {worker_ids, [0,1,2,3,4,5,6,7,8,9]}] = esnowflake:stats(),
+     {worker_num, 5},
+     {worker_ids, _TODO_FOR_TEST_}] = esnowflake:stats(),
 
     Config.
 
@@ -144,8 +168,26 @@ t_decode_id(Config) ->
 
     Config.
 
-%% TODO: clock backward test
-t_clock_backward(Config) ->
+t_not_use_redis(Config) ->
+    Id = esnowflake:generate_id(),
+    true = is_integer(Id),
+
+    [{version, _},
+     {worker_num, 5},
+     {worker_ids, IDs}] = esnowflake:stats(),
+
+    ?assert(lists:subtract(IDs, [20, 21, 22, 23, 24]) =:= []),
+
+    Config.
+
+t_over_worker_ids_limit(Config) ->
+
+    [{version, _},
+     {worker_num, 1024},
+     {worker_ids, IDs}] = esnowflake:stats(),
+
+    ?assert(length(IDs) =:= 1024),
+
     Config.
 
 %% benchmark
@@ -205,3 +247,9 @@ bench_generate_ids_op_per_sec(Diff, Cnt) ->
     esnowflake:generate_ids(1000),
     E = erlang:system_time(nano_seconds),
     bench_generate_ids_op_per_sec(Diff+(E-S), Cnt+1).
+
+
+% private
+flushdb() ->
+    {ok, C} = eredis:start_link([{port, 26379}]),
+    eredis:q(C, ["FLUSHDB"]).
