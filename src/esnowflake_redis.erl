@@ -56,28 +56,17 @@ handle_cast(_Info, State) ->
     {noreply, State}.
 
 handle_call(get_wid, _From, State = #state{redis = C, range_ids = RIds}) ->
-    Pattern = lists:flatten(io_lib:format("~p:*", [?KEY_PREFIX])),
-    UsedWids =
-    case eredis:q(C, ["KEYS", Pattern]) of
-        {ok, []} ->
-            [];
-        {ok, Keys} ->
-            case eredis:q(C, ["MGET" | Keys]) of
-                {ok, Wids} ->
-                    [binary_to_integer(Wid)||Wid<-Wids];
-                {error, Reason} ->
-                    %% TODO:
-                    error_logger:error_msg("error: reason ~p, keys ids: ~p", [Reason, Keys]),
-                    []
+    case get_used_worker_ids(C) of
+        {error, Reason} ->
+            {reply, {error, Reason}, State};
+        UsedWids ->
+            case lists:subtract(RIds, UsedWids) of
+                [] ->
+                    {reply, {error, all_worker_ids_assigned}, State};
+                OKIds ->
+                    Wid = lists:nth(rand:uniform(length(OKIds)), OKIds),
+                    {reply, Wid, State}
             end
-    end,
-
-    case lists:subtract(RIds, UsedWids) of
-        [] ->
-            {reply, all_worker_ids_assigned, State};
-        OKIds ->
-            Wid = lists:nth(rand:uniform(length(OKIds)), OKIds),
-            {reply, Wid, State}
     end;
 handle_call({setnx, Key, Val}, _From, State = #state{redis = C}) ->
     EKey = lists:flatten(io_lib:format("~p:~p", [?KEY_PREFIX, Key])),
@@ -98,3 +87,19 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+% private
+get_used_worker_ids(C) ->
+    Pattern = lists:flatten(io_lib:format("~p:*", [?KEY_PREFIX])),
+    case eredis:q(C, ["KEYS", Pattern]) of
+        {ok, []} ->
+            [];
+        {ok, Keys} ->
+            case eredis:q(C, ["MGET" | Keys]) of
+                {ok, Wids} ->
+                    [binary_to_integer(Wid)||Wid<-Wids];
+                {error, Reason} ->
+                    error_logger:error_msg("error: reason ~p, keys ids: ~p", [Reason, Keys]),
+                    {error, Reason}
+            end
+    end.

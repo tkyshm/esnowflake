@@ -178,8 +178,8 @@ get_next_worker_id(0) ->
     {error, over_retry_count_set_worker_id};
 get_next_worker_id(Try) ->
     case esnowflake_redis:get_wid() of
-        all_worker_ids_assigned ->
-            {error, all_worker_ids_assigned};
+        {error, Reason} ->
+            {error, Reason};
         Wid ->
             case esnowflake_redis:setnx_wid(Wid) of
                 {ok, <<"OK">>} ->
@@ -192,4 +192,3 @@ get_next_worker_id(Try) ->
                     get_next_worker_id(Try-1)
             end
     end.
-
