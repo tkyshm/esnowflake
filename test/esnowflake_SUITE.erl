@@ -174,7 +174,9 @@ t_not_use_redis(Config) ->
 
     [{version, _},
      {worker_num, 5},
-     {worker_ids, [20, 21, 22, 23, 24]}] = esnowflake:stats(),
+     {worker_ids, IDs}] = esnowflake:stats(),
+
+    ?assert(lists:subtract(IDs, [20, 21, 22, 23, 24]) =:= []),
 
     Config.
 
