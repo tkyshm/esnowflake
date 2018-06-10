@@ -38,7 +38,7 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link(Version, WorkerNum) -> {ok, Pid} | ignore | {error, Error}
+%% @spec start_link(Version) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link(Version) ->

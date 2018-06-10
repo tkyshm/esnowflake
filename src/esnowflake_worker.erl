@@ -46,7 +46,7 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link(Id) -> {ok, Pid} | ignore | {error, Error}
+%% @spec start_link(Id, IsRedis) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link(Id, IsRedis) ->
