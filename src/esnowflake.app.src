@@ -1,6 +1,6 @@
 {application, esnowflake,
  [{description, "Twitter's Snowflake UUID generator in Erlang"},
-  {vsn, "0.4.0"},
+  {vsn, "0.4.1"},
   {registered, []},
   {mod, { esnowflake_app, []}},
   {applications,
