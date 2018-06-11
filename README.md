@@ -46,6 +46,7 @@ redis             | -       | eredis config for assigning worker ids automatical
 
 
 - redis config
+
 params          | default
 --------------- | ----------------------------------
 host            | localhost
@@ -54,6 +55,7 @@ database        | 0
 password        | (empty)
 reconnect_sleep | please check `eredis:start_link/1`
 connect_timeout | please check `eredis:start_link/1`
+
 
 - app.conf
 
