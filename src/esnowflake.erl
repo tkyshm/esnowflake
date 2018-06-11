@@ -11,6 +11,8 @@
          to_unixtime/2,
          unixtime_to_id/1,
          unixtime_to_id/2,
+         range_ids/2,
+         range_ids/3,
          decode_id/1,
          stats/0]).
 
@@ -71,6 +73,24 @@ unixtime_to_id(UnixTime, milli_seconds) ->
     TS = UnixTime - ?TWEPOCH,
     <<Id:64>> = <<0:1, TS:41, 0:22>>,
     Id.
+
+%% @doc
+%% Returns minimum and maximum ids from unixtime.
+%% This range expresses `min <= x < max`.
+%% @end
+-spec range_ids(StartTime :: integer(), EndTime :: integer()) -> [integer()].
+range_ids(StartTime, EndTime) ->
+    range_ids(StartTime, EndTime, milli_seconds).
+
+%% @doc
+%% Returns minimum and maximum ids from unixtime with time_unit().
+%% This range expresses `min <= x <= max`.
+%% @end
+-spec range_ids(StartTime :: integer(), EndTime :: integer(), time_unit()) -> [integer()].
+range_ids(StartTime, EndTime, seconds) ->
+    [unixtime_to_id(StartTime*1000), unixtime_to_id(EndTime*1000+1)-1];
+range_ids(StartTime, EndTime, milli_seconds) ->
+    [unixtime_to_id(StartTime), unixtime_to_id(EndTime + 1)-1].
 
 %% @doc
 %% Decode generated id to unix time, machine id and sequential number.

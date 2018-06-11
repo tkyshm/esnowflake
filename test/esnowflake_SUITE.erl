@@ -30,6 +30,7 @@
          t_stats/1,
          t_not_use_redis/1,
          t_over_worker_ids_limit/1,
+         t_range_ids/1,
          b_generate_id/1,
          b_generate_ids/1
         ]).
@@ -54,7 +55,8 @@ groups() ->
         t_unixtime_to_id,
         t_decode_id,
         t_not_use_redis,
-        t_over_worker_ids_limit]},
+        t_over_worker_ids_limit,
+        t_range_ids]},
 
      {bench, [], [
         b_generate_id,
@@ -187,6 +189,20 @@ t_over_worker_ids_limit(Config) ->
      {worker_ids, IDs}] = esnowflake:stats(),
 
     ?assert(length(IDs) =:= 1024),
+
+    Config.
+
+t_range_ids(Config) ->
+    % timestamp: Thu Dec 14 22:27:08 JST 2017
+    StartTime = 1513258028697,
+    StartTimeSec = 1513258028,
+
+    % timestamp: Thu Dec 21 22:27:08 JST 2017
+    EndTime = 1513862828697,
+    EndTimeSec = 1513862828,
+
+    [17942010698661888, 20478725762056191] = esnowflake:range_ids(StartTime, EndTime),
+    [17942007775232000, 20478722838626303] = esnowflake:range_ids(StartTimeSec, EndTimeSec, seconds),
 
     Config.
 

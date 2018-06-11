@@ -24,9 +24,15 @@ ok
 1509193995927
 
 > esnowflake:stats().
-[{version,"0.3.0"},
+[{version, undefined},
  {worker_num,10},
  {worker_ids,[0,1,2,3,4,5,6,7,8,9]}]
+
+1> {Start, End} = {os:system_time(seconds)-3600*24, os:system_time(seconds)}.
+{1528600349,1528686749}
+2> esnowflake:range_ids(Start,End).
+[2900661259315707904,2900661621707767807]
+
 ```
 
 Config
@@ -41,7 +47,7 @@ This must be specified as not to duplicate worker ids if you use multi nodes.
 params            | default | explain
 ----------------- | ------- | ---------------------------------------------------------
 worker_num        | 2       | number of generate id workers
-worker_min_max_id | [0, 9]  | worker ids
+worker_min_max_id | [0, 1]  | worker ids
 redis             | -       | eredis config for assigning worker ids automatically
 
 
