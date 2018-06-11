@@ -76,7 +76,7 @@ unixtime_to_id(UnixTime, milli_seconds) ->
 
 %% @doc
 %% Returns minimum and maximum ids from unixtime.
-%% This range expresses `min <= x < max`.
+%% This range expresses `min <= x <= max'.
 %% @end
 -spec range_ids(StartTime :: integer(), EndTime :: integer()) -> [integer()].
 range_ids(StartTime, EndTime) ->
@@ -84,7 +84,7 @@ range_ids(StartTime, EndTime) ->
 
 %% @doc
 %% Returns minimum and maximum ids from unixtime with time_unit().
-%% This range expresses `min <= x <= max`.
+%% This range expresses `min <= x <= max'.
 %% @end
 -spec range_ids(StartTime :: integer(), EndTime :: integer(), time_unit()) -> [integer()].
 range_ids(StartTime, EndTime, seconds) ->
