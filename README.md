@@ -29,9 +29,9 @@ ok
  {worker_ids,[0,1,2,3,4,5,6,7,8,9]}]
 
 1> {Start, End} = {os:system_time(seconds)-3600*24, os:system_time(seconds)}.
-{1528600349,1528686749}
-2> esnowflake:range_ids(Start,End).
-[2900661259315707904,2900661621707767807]
+{1528603140,1528689540}
+2> esnowflake:range_ids(Start,End, seconds).
+[82304072417280000,82666460287074303]
 
 ```
 
