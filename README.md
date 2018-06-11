@@ -46,6 +46,7 @@ redis             | -       | eredis config for assigning worker ids automatical
 
 
 - redis config
+
 params          | default
 --------------- | ----------------------------------
 host            | localhost
@@ -55,12 +56,24 @@ password        | (empty)
 reconnect_sleep | please check `eredis:start_link/1`
 connect_timeout | please check `eredis:start_link/1`
 
+
 - app.conf
 
 ```erlang
 [
-    {esnowflake, [{worker_min_max_id, [0, 9]}]}
-]
+ {esnowflake, [
+               {worker_min_max_id, [0, 1]}
+              ]}
+].
+```
+
+```erlang
+[
+ {esnowflake, [
+               {redis, [{host, "localhost"}, {port, 26379}]},
+               {worker_num, 2}
+              ]}
+].
 ```
 
 Bench
