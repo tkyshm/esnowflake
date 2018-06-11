@@ -47,7 +47,7 @@ This must be specified as not to duplicate worker ids if you use multi nodes.
 params            | default | explain
 ----------------- | ------- | ---------------------------------------------------------
 worker_num        | 2       | number of generate id workers
-worker_min_max_id | [0, 9]  | worker ids
+worker_min_max_id | [0, 1]  | worker ids
 redis             | -       | eredis config for assigning worker ids automatically
 
 
