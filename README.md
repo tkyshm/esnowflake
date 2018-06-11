@@ -61,8 +61,19 @@ connect_timeout | please check `eredis:start_link/1`
 
 ```erlang
 [
-    {esnowflake, [{worker_min_max_id, [0, 9]}]}
-]
+ {esnowflake, [
+               {worker_min_max_id, [0, 1]}
+              ]}
+].
+```
+
+```erlang
+[
+ {esnowflake, [
+               {redis, [{host, "localhost"}, {port, 26379}]},
+               {worker_num, 2}
+              ]}
+].
 ```
 
 Bench
