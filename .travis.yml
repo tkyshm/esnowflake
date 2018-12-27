@@ -12,6 +12,7 @@ cache:
     - _build
 
 before_script:
+  - git clone https://github.com/erlang/rebar3.git; cd rebar3; ./bootstrap; sudo mv rebar3 /usr/local/bin/; cd -
   - git clone https://github.com/inaka/elvis
   - cd elvis
   - rebar3 escriptize
