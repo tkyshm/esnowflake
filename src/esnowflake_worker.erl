@@ -190,8 +190,8 @@ code_change(_OldVsn, State, _Extra) ->
 %% generate 64bit snowflake id
 %% @end
 -spec snowflake_id(Now :: integer(), State :: worker_state()) ->
-    integer() |
-    {error, err_clock_backwards, term(), worker_state()}.
+    {integer(), worker_state()} |
+    {error, term(), term(), worker_state()}.
 snowflake_id(Now, State = #state{pre_timestamp = PreTS}) when Now < PreTS ->
     Msg = io_lib:format("timestamp diff: ~p", [PreTS - Now]),
     {error, err_clock_backwards, Msg, State};
@@ -210,7 +210,7 @@ snowflake_id(Now, State = #state{worker_id = Wid}) ->
 %% generate 64bit snowflake ids
 %% @end
 -spec snowflake_ids(Now :: integer(), Num :: integer(), State :: worker_state()) ->
-    [integer()] |
+    {[integer()], worker_state()} |
     {error, err_clock_backwards, term(), worker_state()}.
 snowflake_ids(Now, Num, State) ->
     snowflake_ids(Now, Num, [], State).
