@@ -44,11 +44,12 @@ Config
 
 This must be specified as not to duplicate worker ids if you use multi nodes.
 
-params            | default | explain
------------------ | ------- | ---------------------------------------------------------
-worker_num        | 2       | number of generate id workers
-worker_min_max_id | [0, 1]  | worker ids
-redis             | -       | eredis config for assigning worker ids automatically
+params            | default       | explain
+----------------- | ------------- | ---------------------------------------------------------
+worker_num        | 2             | number of generate id workers
+worker_min_max_id | [0, 1]        | worker ids
+redis             | -             | eredis config for assigning worker ids automatically
+twepoch           | 1508980320000 | start unix time to number id (default: 2017-10-26 01:12:00 (UTC))
 
 
 - redis config
