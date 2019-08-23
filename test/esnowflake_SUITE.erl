@@ -31,6 +31,7 @@
          t_not_use_redis/1,
          t_over_worker_ids_limit/1,
          t_range_ids/1,
+         t_change_twepoch/1,
          b_generate_id/1,
          b_generate_ids/1
         ]).
@@ -56,7 +57,8 @@ groups() ->
         t_decode_id,
         t_not_use_redis,
         t_over_worker_ids_limit,
-        t_range_ids]},
+        t_range_ids,
+        t_change_twepoch]},
 
      {bench, [], [
         b_generate_id,
@@ -91,6 +93,11 @@ init_per_testcase(t_over_worker_ids_limit, Config) ->
     application:set_env(esnowflake, worker_num, 1025),
     {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
     Config;
+init_per_testcase(t_change_twepoch, Config) ->
+    application:unset_env(esnowflake, twepoch),
+    application:set_env(esnowflake, twepoch, 1513258020000),
+    {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
+    Config;
 init_per_testcase(_TestCase, Config) ->
     {ok, [esnowflake]} = application:ensure_all_started(esnowflake),
     Config.
@@ -104,6 +111,10 @@ end_per_testcase(t_not_use_redis, Config) ->
 end_per_testcase(t_over_worker_ids_limit, _Config) ->
     flushdb(),
     application:set_env(esnowflake, worker_num, 5),
+    application:stop(esnowflake);
+end_per_testcase(t_change_twepoch, _Config) ->
+    flushdb(),
+    application:unset_env(esnowflake, twepoch),
     application:stop(esnowflake);
 end_per_testcase(_TestCase, _Config) ->
     flushdb(),
@@ -201,8 +212,22 @@ t_range_ids(Config) ->
     EndTime = 1513862828697,
     EndTimeSec = 1513862828,
 
-    [17942010698661888, 20478725762056191] = esnowflake:range_ids(StartTime, EndTime),
-    [17942007775232000, 20478722838626303] = esnowflake:range_ids(StartTimeSec, EndTimeSec, seconds),
+    ?assert([17942010698661888, 20478725762056191] =:= esnowflake:range_ids(StartTime, EndTime)),
+    ?assert([17942007775232000, 20478722838626303] =:= esnowflake:range_ids(StartTimeSec, EndTimeSec, seconds)),
+
+    Config.
+
+t_change_twepoch(Config) ->
+    % timestamp: Thu Dec 14 22:27:08 JST 2017
+    StartTime = 1513258028697,
+    StartTimeSec = 1513258028,
+
+    % timestamp: Thu Dec 21 22:27:08 JST 2017
+    EndTime = 1513862828697,
+    EndTimeSec = 1513862828,
+
+    ?assert([36477861888, 2536751541256191] =:= esnowflake:range_ids(StartTime, EndTime)),
+    ?assert([33554432000, 2536748617826303] =:= esnowflake:range_ids(StartTimeSec, EndTimeSec, seconds)),
 
     Config.
 
