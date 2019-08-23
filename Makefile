@@ -1,5 +1,8 @@
 .PHONY: elvis test bench redis
 
+start:
+	rebar3 auto --apps esnowflake --config ./config/app.config
+
 elvis:
 	elvis --config elvis.config
 
