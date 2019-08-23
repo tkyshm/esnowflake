@@ -1,4 +1,4 @@
--define(TWEPOCH, 1508980320000). %% 2017-10-26 01:12:00 (UTC)
+-define(TWEPOCH, application:get_env(esnowflake, twepoch, 1508980320000)). %% default: 2017-10-26 01:12:00 (UTC)
 -define(DEFAULT_WORKER_MIN_MAX, [0, 1]).
 -define(DEFAULT_WORKER_NUM, 2).
 -define(WORKER_ID_RANGE, 1024).
